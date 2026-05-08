@@ -226,7 +226,10 @@ Status ReduceNaiveProgram::GenerateShaderCode(ShaderHelper& shader) const {
     // variables (e.g., first_element) or divide by zero (ReduceMean).
     const auto& identity = reduce_op_empty_identity_map.at(reduce_op_type_);
     shader.MainFunctionBody() << shader.GuardAgainstOutOfBoundsWorkgroupSizes("uniforms.output_size")
-                              << "let output_value = " << identity << ";\n"
+                              // Use var to prevent WGSL constant-folding of the identity
+                              // expression.  Some validators reject inf-producing constant
+                              // expressions (e.g. division by zero or f32→f16 inf conversion).
+                              << "var output_value: output_value_t = " << identity << ";\n"
                               << output.SetByOffset("global_idx", "output_value");
     return Status::OK();
   }
